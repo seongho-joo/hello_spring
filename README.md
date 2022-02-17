@@ -41,6 +41,8 @@ public class HelloController {
 </body>
 </html>
 ```
+동작 환경 그림
+<img width="807" alt="스크린샷 2022-02-16 오후 10 14 14" src="https://user-images.githubusercontent.com/45463495/154274530-c4046da5-e946-4597-8313-5ba88358b612.png">
 
 `@GetMapping("route")`
 - `/route`로 들어오면 해당하는 메서드 실행
@@ -50,3 +52,6 @@ public class HelloController {
 
 `return "viewName"`
 - `viewResolver`가 `resource:templates/viewName.html`을 찾아서 화면에 띄어줌
+
+`<html xmlns:th ="http://www.thymeleaf.org">`
+- `thymeleaf` 템플릿을 사용하기 위해 추가
