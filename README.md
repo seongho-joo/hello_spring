@@ -58,10 +58,10 @@ public class HelloController {
 - `thymeleaf` 템플릿을 사용하기 위해 추가
 
 **빌드하고 실행하기**
-- `cd 프로젝트 디렉터리`
-- `./gradlew build`
-- `cd build`
-- `java -jar hello-sping-0.0.1-SNAPSHOT.jar`
+- `$ cd 프로젝트 디렉터리`
+- `$ ./gradlew build`
+- `$ cd build`
+- `$ java -jar hello-sping-0.0.1-SNAPSHOT.jar`
 
 ## `2022.02.21`
 ### 강의 내용
