@@ -4,6 +4,8 @@
 ## table of contents
 - [2022.02.16](#20220216)
 - [2022.02.21](#20220221)
+- [2022.02.22](#20220222)
+- [](#강의-내용)
 ***
 
 ## `2022.02.16`
@@ -165,3 +167,64 @@ public class HelloController {
     }
 }
 ```
+
+## `2022.02.22`
+### 회원 도메인과 리포지토리 만들기 및 회원 서비스 개발
+**회원 객체 만들기**
+1. `domain`, `repository` package 생성
+2. 데이터 저장소가 선정되지 않았으므로 `MemberRepository`는 인터페이스로 구현
+3. 개발 진행을 위해 초기 개발 단계에서 메모리 기반의 데이터 저장소 사용
+
+**회원 서비스 개발**
+1. 회원 가입, 회원 조회 구현
+
+**코드**
+- [회원 객체](src/main/java/hello/hellospring/domain/Member.java)
+- [회원 리포지토리 인터페이스](src/main/java/hello/hellospring/repository/MemberRepository.java)
+- [회원 리포지토리 메모리 구현체](src/main/java/hello/hellospring/repository/MemoryMemberRepository.java)
+- [회원 서비스](src/main/java/hello/hellospring/service/MemberService.java)
+
+`Optional<T>`
+- `null`이 올 수 있는 값을 감싸는 Wrapper 클래스
+- `isPresent()`
+  - `null`이라면 `false`, 값이 있다면 `true`를 반환
+- `ofNullable()`
+  - `null`이 아닐 때 값을 가지는 `Optional` 객체 반환
+  - `null`일 경우 비어있는 `Optional` 객체 반환
+- `ifPresent()`
+  - `null`이 아닐 경우 람다식을 실행
+
+### 테스트 케이스 작성
+- `JUnit` 프레임워크로 테스트를 실행
+- 테스트는 각각 독립적으로 실행되어야 한다. 테스트 순서에 의존관계가 있는 것은 좋은 테스트가 아니다.
+
+**코드**
+- [회원 리포지토리 메모리 구현체 테스트](src/test/java/hello/hellospring/repository/MemoryMemberRepositoryTest.java)
+- [회원 서비스 테스트](src/test/java/hello/hellospring/service/MemberServiceTest.java)
+
+**테스트를 작성하면서 변경된 점**
+- 기존에는 회원 서비스가 메모리 회원 리포지토리를 직접 생성하게 했다.
+- 회원 서비스 코드를 의존성 주입(Dependency Injection, DI)이 가능하게 변경한다.
+```java
+// 기존 코드
+public class MemberRepository {
+  private final MemberRepository memberRepository = new memberRepository();
+}
+// 변경 후 코드
+public class MemberRepository {
+  private final MemberRepository memberRepository;
+  
+  public MemberService(MemberRepository memberRepository) {
+      this.memberRepository = memberRepository;
+  }
+}
+```
+
+- `@Test`
+  - 애노테이션 아래에 있는 메소드를 테스트 메소드 대상으로 선정
+- `Assertions.asstertThat(String actual).isEqualTo(String excepted)`
+  - 두 값이 같은지 여부를 체크
+- `@AfterEach`
+  - 각 테스트 메소드를 실행 후 `@AfterEach` 아래 메소드를 실행
+- `@BeforeEach`
+  - 각 테스트 메소드를 실행 전 `@BeforeEach` 아래 메소드를 실행
