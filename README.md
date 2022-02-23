@@ -320,3 +320,11 @@ public class SpringConfig {
   }
 }
 ```
+
+### 회원 웹 기능
+- 이전에 정적 컨텐츠를 작성했지만 컨트롤러가 우선순위가 높기 때문에 [`HomeController`](src/main/java/hello/hellospring/controller/HomeController.java)가 실행 돼 뷰를 띄워준다.
+- HTML form 태그를 submit 하면 스프링에서 자동으로 [`MemberForm`](src/main/java/hello/hellospring/controller/MemberForm.java) 객체의 `setter`를 실행 해준다.
+- `@postMapping`
+  - POST 통신을 할 때 `@postMapping` 아래에 있는 메소드를 실행
+- `th:each="member : ${members}"`
+  - java for-each 문 동작과 유사함
