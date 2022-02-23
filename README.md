@@ -1,14 +1,19 @@
 # 스프링 입문 - 코드로 배우는 스프링 부트, 웹 MVC, DB 접근 기술
 > 우아한형제들 기술이사 김영한님 강의를 듣고 내용 정리
 
-## table of contents
+
+<details>
+<summary>Table of Contents</summary>
+
 - [2022.02.16](#20220216)
 - [2022.02.21](#20220221)
 - [2022.02.22](#20220222)
-- [](#강의-내용)
+- [2022.02.23](#20220223)
+</details>
+
 ***
 
-## `2022.02.16`
+## 2022.02.16
 ### 강의 내용
 - 프로젝트 생성
 - View 환경설정
@@ -96,7 +101,6 @@ public class HelloController {
 ```java
 @Controller
 public class HelloController {
-    ...
     
     @GetMapping("hello-mvc")
     public String helloMvc(@RequestParam("name") String name, Model model) {
@@ -108,7 +112,7 @@ public class HelloController {
 `View`
 ```html
 <!DOCTYPE html>
-<html lang="en", xmlns:th="http://www.thymelear.org">
+<html xmlns:th ="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
@@ -168,7 +172,7 @@ public class HelloController {
 }
 ```
 
-## `2022.02.22`
+## 2022.02.22
 ### 회원 도메인과 리포지토리 만들기 및 회원 서비스 개발
 **회원 객체 만들기**
 1. `domain`, `repository` package 생성
@@ -228,3 +232,91 @@ public class MemberRepository {
   - 각 테스트 메소드를 실행 후 `@AfterEach` 아래 메소드를 실행
 - `@BeforeEach`
   - 각 테스트 메소드를 실행 전 `@BeforeEach` 아래 메소드를 실행
+
+## 2022.02.23
+### 스프링 빈과 의존관계
+
+#### 컴포넌트 스캔과 자동 의존관계 설정
+회원 컨트롤러가 회원 서비스와 회원 리포지토리를 사용할 수 있게 의존관계를 주입해야 한다.
+```java
+// 회원 컨트롤러에 의존관계 추가
+
+@Controller
+public class MemberController {
+    
+    private final MemberService memberService;
+    
+    @Autowired
+    public MemberController(MemberSerivce memberSerivce) {
+        this.memberService = memberSerivce;
+    } 
+}
+```
+```java
+// 회원 서비스 스프링 빈 등록
+@Service
+public class MemberService {
+    private final MemberRepository memberRepository;
+    
+    @Autowired
+    public MemberService(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
+}
+```
+```java
+// 회원 리포지토리 스프링 빈 등록
+@Repository
+public class MemoryMemberRepository {  }
+```
+- 생성자에 `@Autowired`가 있으면 스프링이 연관된 객체를 스프링 컨테이너에서 찾아서 넣어준다.
+- 객체 의존관계를 외부에서 넣어주는 것을 DI(Dependency Injection), 의존성 주입이라 한다.
+- 이전 테스트에서는 개발자가 직접 주입했고, 이번에는 스프링이 주입해준다.
+- 하지만 `MemberService`와 `MemberRepository`가 스프링 빈으로 등록되지 않았기 때문에 실행하면 오류가 발생한다.
+
+**의존성 주입(Dependency Injection, DI)**
+- 필드 주입, setter 주입, 생성자 주입 3가지 방법이 존재
+- 의존관계가 실행 중에 동적으로 변하는 경우는 거의 없으므로 생성자 주입을 권장한다.
+
+**스프링 빈을 등록하는 2가지 방법**
+- 컴포넌트 스캔과 자동 의존관계 설정
+- 자바 코드로 직접 스프링 빈 등록하기
+
+**컴포넌트 스캔 원리**
+- `@Component` 애노테이션이 있으면 스프링 빈이 자동 등록된다.
+- `@Component`를 포함하는 다음 애노테이션들은 스프링 빈으로 자동 등록된다.
+  - `@Controller`
+  - `@Service`
+  - `@Repository`
+
+**스프링 빈 등록 이미지**
+![image](https://user-images.githubusercontent.com/45463495/155277133-0375fc9e-2182-471d-b556-079a698728e6.png)
+
+> 💡 참고 : 스프링은 스프링 컨테이너에 스프링 빈을 등록할 때, 기본으로 싱글톤으로 등록한다. 따라서 같은 스프링 빈이면 모두 같은 인스턴스다.
+
+#### 자바 코드로 직접 스프링 빈 등록하기
+- 우선 회원 서비스, 회원 리포지토리에서 작성한 `@Service`, `@Repository`, `@Autowired` 애노테이션을 제거한다.
+
+```java
+package hello.hellospring;
+
+import hello.hellospring.repository.MemberRepository;
+import hello.hellospring.repository.MemoryMemberRepository;
+import hello.hellospring.service.MemberService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class SpringConfig {
+
+  @Bean
+  public MemberService memberService() {
+    return new MemberService(memberRepository());
+  }
+
+  @Bean
+  public MemberRepository memberRepository() {
+    return new MemoryMemberRepository();
+  }
+}
+```
