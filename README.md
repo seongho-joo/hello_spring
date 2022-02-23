@@ -328,3 +328,143 @@ public class SpringConfig {
   - POST 통신을 할 때 `@postMapping` 아래에 있는 메소드를 실행
 - `th:each="member : ${members}"`
   - java for-each 문 동작과 유사함
+  
+### 스프링 DB 접근 기술
+> 강의에서는 H2 DB를 사용했지만 이전 프로젝트할 때 쓰던 postgreSQL를 이용   
+> 순수 JDBC는 강의 참고만 하고 구현은 직접 안함   
+
+**환경 설정**
+- `build.gradle`에 jdbc, postgre, log4jdbc-log4j2 관련 라이브러리 추가
+- postgre와 spring boot 연결은 [SpringBoot에 JDBC로 Postgresql 연동하기](https://velog.io/@jwpark06/SpringBoot%EC%97%90-JDBC%EB%A1%9C-Postgresql-%EC%97%B0%EB%8F%99%ED%95%98%EA%B8%B0)를 참고함
+```
+implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
+// https://mvnrepository.com/artifact/org.postgresql/postgresql
+implementation group: 'org.postgresql', name: 'postgresql', version: '42.3.3'
+
+// https://mvnrepository.com/artifact/org.bgee.log4jdbc-log4j2/log4jdbc-log4j2-jdbc4
+implementation group: 'org.bgee.log4jdbc-log4j2', name: 'log4jdbc-log4j2-jdbc4', version: '1.16'
+```
+- spring boot DB 연결
+```
+spring.datasource.url=jdbc:postgresql://localhost:5432/spring_study
+spring.datasource.username=username
+spring.datasource.password=password
+```
+- 테이블 생성
+```sql
+create table member (
+    id serial primary key,
+    name varchar not null
+);
+```
+- auto increment를 사용하기 위해 [PostgreSQL에서 AUTO INCREMENT 사용하기](https://semtax.tistory.com/15)를 참고함
+
+**JDBC Template**
+- 순수 JDBC에서 중복되는 코드를 대부분 제거해준다.
+- 하지만 SQL은 직접 작성해야 한다.
+- [JDBC Template 회원리포지토리 코드](src/main/java/hello/hellospring/repository/JdbcTemplateMemberRepository.java)
+
+
+**spring bean 변경**
+```java
+@Configuration
+public class SpringConfig {
+
+    private DataSource dataSource;
+
+    public SpringConfig(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    @Bean
+    public MemberService memberService() {
+        return new MemberService(memberRepository());
+    }
+
+    @Bean
+    public MemberRepository memberRepository() {
+        return new JdbcTemplateMemberRepository(dataSource);
+    }
+}
+
+```
+- `DataSource`
+  - DB connection을 획득할 때 사용하는 객체
+- 위와 같이 작성하면 OCP원리를 지킨다.
+- 스프링 DI를 사용하면 기존 코드를 전혀 손대지 않고, 설정만으로 구현 클래스를 변경할 수 있다.
+
+~~Clean Code에서 봤던 내용들이 나와서 이해를 좀 더 하게 됐음~~
+
+### Spring 통합 테스트
+- 통합 테스트를 하는 것보다 단위 테스트를 진행하는 것이 더 좋은 테스트
+
+```java
+package hello.hellospring.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
+import hello.hellospring.domain.Member;
+import hello.hellospring.repository.MemberRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
+
+@SpringBootTest
+@Transactional
+class MemberServiceTest {
+
+    @Autowired
+    MemberService memberService;
+    @Autowired
+    MemberRepository memberRepository;
+
+    @Test
+    void join() {
+        // given
+        Member member = new Member();
+        member.setName("hello");
+
+        // when
+        Long saveId = memberService.join(member);
+
+        // then
+        Member findMember = memberService.findOne(saveId).get();
+        assertThat(member.getName()).isEqualTo(findMember.getName());
+    }
+
+    @Test
+    public void duplicateMemberException() {
+        // given
+        Member member1 = new Member();
+        member1.setName("spring");
+
+        Member member2 = new Member();
+        member2.setName("spring");
+
+        // when
+        memberService.join(member1);
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> memberService.join(member2));
+
+        assertThat(exception.getMessage()).isEqualTo("이미 존재하는 회원입니다.");
+
+//        try {
+//            memberService.join(member2);
+//            fail();
+//        } catch (IllegalStateException e) {
+//            assertThat(e.getMessage()).isEqualTo("이미 존재하는 회원입니다.");
+//        }
+
+        // then
+    }
+}
+```
+- `@SpringBootTest`
+  - spring container와 함께 테스트를 함께 실행된다.
+  - 기존에 테스트 했던 방식은 스프링 테스트가 아니라 자바 테스트다.
+- `@Transactional`
+  - 테스트 시작전에 트랜잭션을 시작하고, 테스트 완료 후 항상 롤백한다.
+  - 항상 롤백이 되기 때문에 DB에 데이터가 남지않아 다음 테스트에 영향을 주지 않는다.
