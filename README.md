@@ -10,6 +10,7 @@
 - [2022.02.22](#20220222)
 - [2022.02.23](#20220223)
 - [2022.02.24](#20220224)
+- [2022.02.25](#20220225)
 </details>
 
 ***
@@ -697,7 +698,7 @@ public class SpringConfig {
 - 스프링 데이터 JPA가 `SpringDataJpaMemberRepository`를 스프링 빈으로 자동 등록 해줌
 
 **스프링 데이터 JPA 제공 클래스**
-![img_1.png](img_1.png)
+![img_1.png](img/img_1.png)
 - 인터페이스를 통한 기본적인 CRUD
 - `findByName()` or `findByEmail()` 처럼 메서드 이름 만으로 조회 기능 제공
 - 페이징 기능 자동 제공
@@ -705,4 +706,86 @@ public class SpringConfig {
 > 💡 실무에서는 JPA와 스프링 데이터 JPA를 기본으로 사용하고, 복잡한 동적 쿼리는 Querydsl이라는 라이브러리 사용한다.   
 > Qeurydsl을 사용하면 쿼리도 자바 코드로 안전하게 작성할 수 있고, 동적 쿼리도 편리하게 작성할 수 있다.
 > 이 조합으로 해결하기 어려운 쿼리는 JPA가 제공하는 네이티브 쿼리를 사용하거나, JDBC Template를 사용한다.
-> 따라서 앞서 배운 내용들을 모두 알고 있어야 한다.  
+> 따라서 앞서 배운 내용들을 모두 알고 있어야 한다.
+
+## 2022.02.25
+### AOP(Aspect Oriented Programming)
+
+**AOP가 필요한 상황**
+- 모든 메소드의 호출 시간을 측정하고 싶다면?
+- 공통 관심 사항(cross-cutting concern) vs 핵심 관심 사항(core concern)
+- 회원 가입 시간, 회원 조회 시간을 측정하고 싶다면?
+
+![img_2.png](img/img_2.png)
+
+```java
+public class MemberService {
+
+  public Long join(Member member) {
+    long start = System.currentTimeMillis();
+    
+    try {
+       // logic 
+    } finally {
+      long end = System.currentTimeMillis();
+      long timeMs = end - start;
+      System.out.println("timeMs = " + timeMs + "ms");
+    }
+  }
+}
+```
+**위 방식의 문제**
+- 위 메소드는 시간을 측정하는 기능은 핵심 관심 사항이 아니다.
+- 시간을 측정하는 로직은 공통 관심 사항이다.
+- 시간을 측정하는 로직과 핵심 비즈니스의 로직이 섞여서 유지보수가 어렵다.
+- 시간을 측정하는 로직을 별도의 공통 로직으로 만들기 매우 어렵다.
+- 로직을 변경할 때 모든 로직을 찾아가면서 변경해야 한다.
+
+**AOP 적용**
+- 공통 관심 사항(cross-cutting concern) vs 핵심 관심 사항(core concern) 분리
+
+![img_3.png](img/img_3.png)
+
+**시간 측정 AOP 등록**
+```java
+package hello.hellospring.aop;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class TimeTraceApp {
+
+    @Around("execution(* hello.hellospring..*(..))")
+    public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+        System.out.println("START = " + joinPoint.toString());
+        try {
+            return joinPoint.proceed();
+        } finally {
+            long end = System.currentTimeMillis();
+            long timeMs = start - end;
+            System.out.println("END = " + joinPoint.toString() + " " + timeMs + "ms") ;
+        }
+    }
+}
+```
+**해결**
+- 회원가입, 회원 조회등 핵심 관심사항과 시간을 측정하는 공통 관심 사항을 분리한다.
+- 시간을 측정하는 로직을 별도의 공통 로직으로 만들었다.
+- 핵심 관심 사항을 깔끔하게 유지할 수 있다.
+- 변경이 필요하면 이 로직만 변경하면 된다.
+- 원하는 적용 대상을 선택할 수 있다.
+
+### AOP 동작 방식 설명
+**AOP 적용 전 의존관계**
+![img_4.png](img/img_4.png)
+**AOP 적용 후 의존관계**
+![img_5.png](img/img_5.png)
+
+## 🤔 느낀점
+Spring에 대한 기초적인 문법과 동작 원리를 알게됐다. 하지만 스프링에 대한 맛보기라서 이것만 듣고 당장 개발하기에는 부족할 것같다.
+그래서 로드맵 강의를 어느정도 듣고 사이드 프로젝트를 시작해야겠다.
